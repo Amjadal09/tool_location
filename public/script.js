@@ -1,14 +1,32 @@
-document.addEventListener("DOMContentLoaded", () => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(sendLocation, handleError, {
-            enableHighAccuracy: true
-        });
-    } else {
-        console.log("المتصفح لا يدعم تحديد الموقع");
+const SERVER_URL = '';
+const statusElement = document.getElementById('status');
+
+function updateStatus(message, isError = false) {
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = isError ? 'error' : 'success';
     }
+}
+
+function checkOnline() {
+    return navigator.onLine;
+}
+
+window.addEventListener('online', () => {
+    updateStatus('تم استعادة الاتصال بالإنترنت');
+    getAndSendLocation();
 });
 
-function sendLocation(position) {
+window.addEventListener('offline', () => {
+    updateStatus('لا يوجد اتصال بالإنترنت', true);
+});
+
+async function sendLocation(position) {
+    if (!checkOnline()) {
+        updateStatus('لا يوجد اتصال بالإنترنت', true);
+        return;
+    }
+
     const data = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -16,15 +34,57 @@ function sendLocation(position) {
         timestamp: new Date().toISOString()
     };
 
-    fetch("https://your-server.com/submit-location", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    }).then(response => response.json())
-      .then(data => console.log("تم الإرسال:", data))
-      .catch(error => console.error("خطأ:", error));
+    try {
+        updateStatus('جاري إرسال الموقع...');
+        const response = await fetch(`${SERVER_URL}/submit-location`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error(`خطأ في الاستجابة: ${response.status}`);
+        }
+
+        const result = await response.json();
+        updateStatus(result.message);
+        
+    } catch (error) {
+        console.error("خطأ:", error);
+        updateStatus(`حدث خطأ: ${error.message}`, true);
+    }
 }
 
 function handleError(error) {
-    console.error("حدث خطأ أثناء تحديد الموقع:", error);
+    let errorMessage;
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            errorMessage = "تم رفض الوصول إلى الموقع";
+            break;
+        case error.POSITION_UNAVAILABLE:
+            errorMessage = "معلومات الموقع غير متوفرة";
+            break;
+        case error.TIMEOUT:
+            errorMessage = "انتهت مهلة طلب الموقع";
+            break;
+        default:
+            errorMessage = "حدث خطأ غير معروف";
+    }
+    console.error("خطأ تحديد الموقع:", errorMessage);
+    updateStatus(errorMessage, true);
 }
+
+function getAndSendLocation() {
+    if (navigator.geolocation) {
+        updateStatus('جاري تحديد الموقع...');
+        navigator.geolocation.getCurrentPosition(sendLocation, handleError, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
+    } else {
+        updateStatus('المتصفح لا يدعم تحديد الموقع', true);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", getAndSendLocation);
