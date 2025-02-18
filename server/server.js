@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const cors = require('cors');
 const twilio = require('twilio');
 const path = require('path');
@@ -11,7 +10,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // تقديم الملفات الثابتة
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // بيانات Twilio
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -20,22 +19,8 @@ const twilioClient = new twilio(accountSid, authToken);
 const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 const yourWhatsAppNumber = process.env.YOUR_WHATSAPP_NUMBER;
 
-// التأكد من وجود ملف المواقع
-const locationsPath = path.join(__dirname, 'data', 'locations.json');
-const locationsDir = path.join(__dirname, 'data');
-
-// إنشاء مجلد data إذا لم يكن موجوداً
-if (!fs.existsSync(locationsDir)) {
-    fs.mkdirSync(locationsDir);
-}
-
-// إنشاء ملف locations.json إذا لم يكن موجوداً
-if (!fs.existsSync(locationsPath)) {
-    fs.writeFileSync(locationsPath, '[]');
-}
-
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'));
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 app.post('/submit-location', async (req, res) => {
@@ -46,13 +31,8 @@ app.post('/submit-location', async (req, res) => {
             return res.status(400).json({ error: 'بيانات الموقع غير مكتملة' });
         }
 
-        // حفظ الموقع
-        const locations = JSON.parse(fs.readFileSync(locationsPath, 'utf8'));
-        locations.push(locationData);
-        fs.writeFileSync(locationsPath, JSON.stringify(locations, null, 2));
-
         // إرسال إشعار واتساب
-        const message = `📍 موقع جديد:\n🌍 https://www.google.com/maps?q=${locationData.latitude},${locationData.longitude}\n🎯 الدقة: ${locationData.accuracy} متر`;
+        const message = `📍 موقع جديد:\n🌍 https://www.google.com/maps?q=${locationData.latitude},${locationData.longitude}\n🎯 الدقة: ${locationData.accuracy} متر\n⏰ الوقت: ${new Date().toLocaleString('ar-SA')}`;
         
         const whatsappMsg = await twilioClient.messages.create({
             from: twilioWhatsAppNumber,
@@ -70,6 +50,11 @@ app.post('/submit-location', async (req, res) => {
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
+});
+
+// للتأكد من أن الخادم يعمل
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', env: process.env.NODE_ENV });
 });
 
 const PORT = process.env.PORT || 3000;
