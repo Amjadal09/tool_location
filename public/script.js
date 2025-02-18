@@ -1,4 +1,4 @@
-const SERVER_URL = '';
+const SERVER_URL = window.location.origin;
 const statusElement = document.getElementById('status');
 
 function updateStatus(message, isError = false) {
