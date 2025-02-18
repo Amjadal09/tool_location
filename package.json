@@ -1,0 +1,13 @@
+{
+    "name": "location-tracker",
+    "version": "1.0.0",
+    "description": "أداة تتبع الموقع وإرسال إشعار واتساب",
+    "main": "server.js",
+    "dependencies": {
+      "express": "^4.17.3",
+      "body-parser": "^1.19.0",
+      "cors": "^2.8.5",
+      "twilio": "^3.82.0"
+    }
+  }
+  
