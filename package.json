@@ -2,10 +2,10 @@
     "name": "location-tracker",
     "version": "1.0.0",
     "description": "أداة تتبع الموقع وإرسال إشعار واتساب",
-    "main": "server/app.js",
+    "main": "server/server.js",
     "scripts": {
-        "start": "node server/app.js",
-        "dev": "nodemon server/app.js"
+        "start": "node server/server.js",
+        "dev": "nodemon server/server.js"
     },
     "dependencies": {
         "express": "^4.17.3",
