@@ -1,28 +1,13 @@
 # Dependencies
 node_modules/
 
-# Secrets and Environment Variables
-credentials.json
+# Environment files
 .env
-*.env
-env-setup.txt
+.env.local
 
 # Logs
 logs
 *.log
-npm-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# npm
-.npm
-.eslintcache
-.node_repl_history
-*.tgz
 
 # OS files
 .DS_Store

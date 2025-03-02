@@ -4,10 +4,10 @@ node_modules/
 # Sensitive files
 .env
 .env.local
-.env.*.local
 credentials.json
+env-setup.txt
 
-# Logs and runtime
+# Logs
 logs
 *.log
 npm-debug.log*
