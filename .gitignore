@@ -4,9 +4,9 @@ node_modules/
 # Sensitive files
 .env
 .env.local
+*.env.*
 credentials.json
 env-setup.txt
-*.env.*
 
 # Logs
 logs
