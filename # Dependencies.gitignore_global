@@ -4,6 +4,8 @@ node_modules/
 # Secrets and Environment Variables
 credentials.json
 .env
+*.env
+env-setup.txt
 
 # Logs
 logs

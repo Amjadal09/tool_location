@@ -89,3 +89,33 @@ npm start
 
 ## الترخيص
 هذا المشروع مرخص تحت [MIT License](LICENSE).
+
+# Location Tracking Tool
+
+## Setup
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Create `.env` file with required environment variables
+3. Add Google Sheets credentials in `credentials.json`
+4. Start the server:
+```bash
+npm start
+```
+
+## Environment Variables
+
+Required environment variables:
+- `PORT`: Server port (default: 3001)
+- `NODE_ENV`: Environment mode (development/production)
+- `SPREADSHEET_ID`: Google Sheets ID
+
+## Development
+
+Run in development mode:
+```bash
+npm run dev
+```
