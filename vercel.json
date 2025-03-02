@@ -8,12 +8,9 @@
     ],
     "routes": [
         {
-            "src": "/send-location",
-            "dest": "server/server.js"
-        },
-        {
             "src": "/(.*)",
             "dest": "server/server.js"
         }
-    ]
+    ],
+    "installCommand": "npm install"
 }

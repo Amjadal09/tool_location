@@ -4,22 +4,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const { google } = require('googleapis');
-const fs = require('fs');
-
-// تحديث ملف credentials.json بمتغيرات البيئة
-const credentialsPath = path.join(__dirname, '../credentials.json');
-let credentials = require(credentialsPath);
-
-// استبدال القيم بمتغيرات البيئة
-credentials.project_id = process.env.GOOGLE_PROJECT_ID;
-credentials.private_key_id = process.env.GOOGLE_PRIVATE_KEY_ID;
-credentials.private_key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-credentials.client_email = process.env.GOOGLE_CLIENT_EMAIL;
-credentials.client_id = process.env.GOOGLE_CLIENT_ID;
-credentials.client_x509_cert_url = process.env.GOOGLE_CLIENT_X509_CERT_URL;
-
-// حفظ التغييرات في الملف
-fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -44,26 +28,12 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
-// إعداد MySQL
-const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE
-});
-
-db.connect((err) => {
-    if (err) {
-        console.error('خطأ في الاتصال بقاعدة البيانات MySQL:', err);
-        return;
-    }
-    console.log('تم الاتصال بقاعدة البيانات MySQL بنجاح');
-});
-
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
@@ -71,11 +41,10 @@ app.get('/', (req, res) => {
 app.post('/send-location', async (req, res) => {
     try {
         const { latitude, longitude, accuracy, timestamp, name, phone } = req.body;
+        console.log('Received data:', { latitude, longitude, accuracy, timestamp, name, phone });
 
         if (!latitude || !longitude) {
-            return res.status(400).json({ 
-                error: 'Location coordinates are required' 
-            });
+            return res.status(400).json({ error: 'Location coordinates are required' });
         }
 
         const locationData = [
@@ -89,33 +58,27 @@ app.post('/send-location', async (req, res) => {
             ]
         ];
 
-        await sheets.spreadsheets.values.append({
+        const response = await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
             range: 'Sheet1!A:F',
             valueInputOption: 'RAW',
-            resource: {
-                values: locationData
-            }
+            resource: { values: locationData }
         });
 
-        res.json({ 
-            success: true, 
-            message: 'Location data successfully received' 
-        });
+        console.log('Data stored in Google Sheets:', response.data);
+        res.json({ success: true, message: 'Location data successfully received' });
 
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ 
-            error: 'Error processing data' 
-        });
+        console.error('Server error:', error);
+        res.status(500).json({ error: 'Error processing data' });
     }
 });
 
-// للتأكد من أن الخادم يعمل
+// Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', env: 'development' });
+    res.json({ status: 'ok', env: process.env.NODE_ENV });
 });
 
 app.listen(port, () => {
-    console.log(`الخادم يعمل على البورت ${port}`);
+    console.log(`Server running on port ${port}`);
 });
