@@ -4,6 +4,22 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const { google } = require('googleapis');
+const fs = require('fs');
+
+// تحديث ملف credentials.json بمتغيرات البيئة
+const credentialsPath = path.join(__dirname, '../credentials.json');
+let credentials = require(credentialsPath);
+
+// استبدال القيم بمتغيرات البيئة
+credentials.project_id = process.env.GOOGLE_PROJECT_ID;
+credentials.private_key_id = process.env.GOOGLE_PRIVATE_KEY_ID;
+credentials.private_key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+credentials.client_email = process.env.GOOGLE_CLIENT_EMAIL;
+credentials.client_id = process.env.GOOGLE_CLIENT_ID;
+credentials.client_x509_cert_url = process.env.GOOGLE_CLIENT_X509_CERT_URL;
+
+// حفظ التغييرات في الملف
+fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
 
 const app = express();
 const port = process.env.PORT || 3001;
