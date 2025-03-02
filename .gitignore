@@ -2,10 +2,10 @@
 node_modules/
 
 # Sensitive files
+credentials.json
 .env
 .env.local
 *.env.*
-credentials.json
 env-setup.txt
 
 # Logs
