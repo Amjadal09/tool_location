@@ -263,28 +263,42 @@
             });
         }
 
+        async function sendLocationToServer(locationData) {
+            try {
+                const response = await fetch('/send-location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(locationData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Server response:', data);
+            } catch (error) {
+                console.error('Error storing location:', error);
+            }
+        }
+
         function storeLocation(coords, name = '', phone = '') {
             const { latitude, longitude, accuracy, timestamp } = coords;
 
-            fetch('/send-location', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ latitude, longitude, accuracy, timestamp: new Date().toISOString(), name, phone })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    document.getElementById('status').textContent = 'تم استلام موقعك بنجاح';
-                } else {
-                    document.getElementById('status').textContent = 'حدث خطأ أثناء إرسال الموقع. الرجاء المحاولة مرة أخرى.';
-                }
-            })
-            .catch(error => {
-                console.error('Error storing location:', error);
-                document.getElementById('status').textContent = 'حدث خطأ أثناء تخزين الموقع. الرجاء المحاولة مرة أخرى.';
-            });
+            sendLocationToServer({ latitude, longitude, accuracy, timestamp: new Date().toISOString(), name, phone })
+                .then(result => {
+                    if (result.success) {
+                        document.getElementById('status').textContent = 'تم استلام موقعك بنجاح';
+                    } else {
+                        document.getElementById('status').textContent = 'حدث خطأ أثناء إرسال الموقع. الرجاء المحاولة مرة أخرى.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error storing location:', error);
+                    document.getElementById('status').textContent = 'حدث خطأ أثناء تخزين الموقع. الرجاء المحاولة مرة أخرى.';
+                });
         }
 
         // إرسال البيانات إلى الخادم

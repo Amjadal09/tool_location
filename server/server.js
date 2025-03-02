@@ -26,8 +26,23 @@ const auth = new google.auth.GoogleAuth({
 });
 
 const sheets = google.sheets({ version: 'v4', auth });
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID; // معرف Google Sheets
+// إعداد MySQL
+const db = mysql.createConnection({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('خطأ في الاتصال بقاعدة البيانات MySQL:', err);
+        return;
+    }
+    console.log('تم الاتصال بقاعدة البيانات MySQL بنجاح');
+});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -47,28 +62,26 @@ app.post('/send-location', async (req, res) => {
             });
         }
 
-        // التحقق من صحة قيمة timestamp
-        const validTimestamp = isNaN(new Date(timestamp)) ? new Date() : new Date(timestamp);
-
-        // تخزين البيانات في Google Sheets
         const locationData = [
-            `Name: ${name || 'Not provided'}`,
-            `Phone: ${phone || 'Not provided'}`,
-            `Coordinates: ${latitude}, ${longitude}`,
-            `Accuracy: ${accuracy || 'Unknown'}`,
-            `Timestamp: ${validTimestamp.toLocaleString('en-US')}`
+            [
+                name || 'Not provided',
+                phone || 'Not provided',
+                latitude,
+                longitude,
+                accuracy || 'Unknown',
+                new Date(timestamp).toLocaleString('en-US')
+            ]
         ];
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A:A', // النطاق الذي سيتم إضافة البيانات إليه
+            range: 'Sheet1!A:F',
             valueInputOption: 'RAW',
             resource: {
-                values: locationData.map(item => [item])
+                values: locationData
             }
         });
 
-        console.log('Data successfully stored in Google Sheets');
         res.json({ 
             success: true, 
             message: 'Location data successfully received' 
@@ -77,7 +90,7 @@ app.post('/send-location', async (req, res) => {
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ 
-            error: 'An error occurred while processing the data' 
+            error: 'Error processing data' 
         });
     }
 });
@@ -88,5 +101,5 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`الخادم يعمل على البورت ${port}`);
 });
