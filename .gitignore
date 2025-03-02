@@ -1,12 +1,10 @@
 # Dependencies
 node_modules/
 
-# Sensitive files
-credentials.json
+# Environment files
 .env
 .env.local
 *.env.*
-env-setup.txt
 
 # Logs
 logs
