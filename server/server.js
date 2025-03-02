@@ -8,6 +8,13 @@ const { google } = require('googleapis');
 const app = express();
 const port = process.env.PORT || 3001;
 
+// تأكد من وجود SPREADSHEET_ID
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+if (!SPREADSHEET_ID) {
+    console.error('SPREADSHEET_ID is not set in environment variables');
+    process.exit(1);
+}
+
 // إعداد Google Sheets API
 const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -26,7 +33,6 @@ const auth = new google.auth.GoogleAuth({
 });
 
 const sheets = google.sheets({ version: 'v4', auth });
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 // Middleware
 app.use(cors());
@@ -40,45 +46,69 @@ app.get('/', (req, res) => {
 
 app.post('/send-location', async (req, res) => {
     try {
+        console.log('Request body:', req.body);
+        console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
+
         const { latitude, longitude, accuracy, timestamp, name, phone } = req.body;
-        console.log('Received data:', { latitude, longitude, accuracy, timestamp, name, phone });
 
         if (!latitude || !longitude) {
-            return res.status(400).json({ error: 'Location coordinates are required' });
+            console.log('Missing coordinates');
+            return res.status(400).json({ 
+                success: false,
+                error: 'Location coordinates are required' 
+            });
         }
 
         const locationData = [
             [
                 name || 'Not provided',
                 phone || 'Not provided',
-                latitude,
-                longitude,
-                accuracy || 'Unknown',
-                new Date(timestamp).toLocaleString('en-US')
+                String(latitude),
+                String(longitude),
+                String(accuracy || 'Unknown'),
+                new Date(timestamp || Date.now()).toLocaleString('en-US')
             ]
         ];
+
+        console.log('Attempting to write to sheet:', locationData);
 
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
             range: 'Sheet1!A:F',
             valueInputOption: 'RAW',
-            resource: { values: locationData }
+            requestBody: {
+                values: locationData
+            }
         });
 
-        console.log('Data stored in Google Sheets:', response.data);
-        res.json({ success: true, message: 'Location data successfully received' });
+        console.log('Sheets API Response:', response.data);
+
+        res.json({ 
+            success: true, 
+            message: 'Location data successfully received' 
+        });
 
     } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({ error: 'Error processing data' });
+        console.error('Detailed error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error processing data',
+            details: error.message 
+        });
     }
 });
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', env: process.env.NODE_ENV });
+    res.json({ 
+        status: 'ok',
+        spreadsheetId: !!SPREADSHEET_ID,
+        env: process.env.NODE_ENV
+    });
 });
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('SPREADSHEET_ID is set:', !!SPREADSHEET_ID);
 });
